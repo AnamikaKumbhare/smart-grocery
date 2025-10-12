@@ -1,9 +1,32 @@
-import React from "react";
+"use client";
+import React, { useEffect, useState } from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import Section from "../components/Section";
+import { useRouter } from "next/navigation";
 
-const Dashboard = () => {
+interface UserData {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  customerID: string;
+}
+
+const Dashboard: React.FC = () => {
+  const router = useRouter();
+  const [user, setUser] = useState<UserData | null>(null);
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    const storedUser = localStorage.getItem("loggedInUser");
+    if (!storedUser) {
+      router.replace("/auth");
+    } else {
+      setUser(JSON.parse(storedUser));
+    }
+  }, [router]);
+
   const freshPicks = [
     { name: "Organic Red Apples", price: "$2.99/lb", badge: "25% Off", img: "https://source.unsplash.com/random/150x150/?red+apples" },
     { name: "Dairy Farm Milk (1 gal)", price: "$3.49", badge: "BOGO", img: "https://source.unsplash.com/random/150x150/?fresh+milk" },
@@ -46,17 +69,26 @@ const Dashboard = () => {
     { name: "Hand Sanitizer (200ml)", price: "$2.50", badge: "Essential", img: "https://source.unsplash.com/random/150x150/?hand+sanitizer" },
   ];
 
+  if (!user) return null;
+
   return (
     <>
       <Header />
-
       <main className="container-fluid py-4">
         <div className="row g-3 mb-4">
           <div className="col-lg-6">
-            <img src="https://source.unsplash.com/random/600x120/?vegetables,sale" className="ad-banner" alt="Veg Deals" />
+            <img
+              src="https://source.unsplash.com/random/600x120/?vegetables,sale"
+              className="ad-banner"
+              alt="Veg Deals"
+            />
           </div>
           <div className="col-lg-6">
-            <img src="https://source.unsplash.com/random/600x120/?dairy,promo" className="ad-banner" alt="Dairy Promo" />
+            <img
+              src="https://source.unsplash.com/random/600x120/?dairy,promo"
+              className="ad-banner"
+              alt="Dairy Promo"
+            />
           </div>
         </div>
 
@@ -69,7 +101,6 @@ const Dashboard = () => {
           <Section title="Daily Essentials" products={dailyEssentials} />
         </div>
       </main>
-
       <Footer />
     </>
   );

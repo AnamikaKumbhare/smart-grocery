@@ -1,5 +1,6 @@
-// pages/auth.tsx
-import { useState } from "react";
+"use client";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface UserData {
   name: string;
@@ -10,12 +11,12 @@ interface UserData {
 }
 
 const Auth: React.FC = () => {
+  const router = useRouter();
   const [showLogin, setShowLogin] = useState(false);
   const [useOtp, setUseOtp] = useState(false);
   const [generatedOtp, setGeneratedOtp] = useState<string | null>(null);
   const [customerID, setCustomerID] = useState("Click 'Generate ID' below");
 
-  // Registration form state
   const [regData, setRegData] = useState({
     name: "",
     email: "",
@@ -23,36 +24,38 @@ const Auth: React.FC = () => {
     password: "",
   });
 
-  // Login form state
   const [loginData, setLoginData] = useState({
     identifier: "",
     password: "",
     otp: "",
   });
 
-  // Generate Customer ID
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    const storedUser = localStorage.getItem("loggedInUser");
+    if (storedUser) router.replace("/"); // Dashboard is at "/"
+  }, [router]);
+
+  // Generate a unique customer ID
   const generateCustomerID = () => {
     const prefix = "CUST-";
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     setCustomerID(prefix + randomNum);
   };
 
-  // Handle Registration
+  // Handle registration
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
-
     const { name, email, phone, password } = regData;
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       alert("❌ Please enter a valid email address.");
       return;
     }
-
     if (!/^[0-9]{10}$/.test(phone)) {
       alert("❌ Please enter a valid 10-digit phone number.");
       return;
     }
-
     if (!customerID.startsWith("CUST-")) {
       alert("⚠ Please generate your Customer ID before registering!");
       return;
@@ -67,7 +70,28 @@ const Auth: React.FC = () => {
     setShowLogin(true);
   };
 
-  // Handle Login
+  // Handle OTP generation
+  const handleGenerateOtp = () => {
+    const identifier = loginData.identifier.trim();
+    const storedData = JSON.parse(localStorage.getItem("userData") || "null") as UserData;
+
+    if (!storedData) {
+      alert("⚠ No registered user found. Please register first.");
+      return;
+    }
+
+    const userExists = storedData.email === identifier || storedData.phone === identifier;
+    if (!userExists) {
+      alert("❌ Email/Phone not registered.");
+      return;
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedOtp(otp);
+    alert(`📩 OTP Sent! (Demo OTP: ${otp})`);
+  };
+
+  // Handle login
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     const storedData = JSON.parse(localStorage.getItem("userData") || "null") as UserData;
@@ -77,42 +101,52 @@ const Auth: React.FC = () => {
       return;
     }
 
-    const matched =
-      storedData.email === loginData.identifier || storedData.phone === loginData.identifier;
+    const matched = storedData.email === loginData.identifier || storedData.phone === loginData.identifier;
 
     if (!matched) {
       alert("❌ Email/Phone not registered.");
       return;
     }
 
+    let loginSuccess = false;
+
     if (!useOtp) {
-      // Password login
-      if (storedData.password === loginData.password) {
-        alert(`✅ Login Successful! Welcome, ${storedData.name}.\nCustomer ID: ${storedData.customerID}`);
-      } else {
+      if (storedData.password === loginData.password) loginSuccess = true;
+      else {
         alert("❌ Incorrect password!");
+        return;
       }
     } else {
-      // OTP login
       if (loginData.otp === generatedOtp && loginData.otp !== "") {
-        alert(`✅ OTP Verified! Welcome, ${storedData.name}.\nCustomer ID: ${storedData.customerID}`);
+        loginSuccess = true;
         setGeneratedOtp(null);
       } else {
         alert("❌ Invalid or expired OTP!");
+        return;
       }
+    }
+
+    if (loginSuccess) {
+      localStorage.setItem("loggedInUser", JSON.stringify(storedData));
+      alert(`✅ Login Successful! Welcome, ${storedData.name}.`);
+      router.replace("/"); // Redirect to dashboard
     }
   };
 
-  // Generate OTP
-  const handleGenerateOtp = () => {
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOtp(otp);
-    alert(`📩 Your OTP is: ${otp}\n(This is a demo simulation.)`);
-  };
-
   return (
-    <div className="d-flex justify-content-center align-items-center vh-100" style={{ background: "linear-gradient(135deg, #f75990, #6610f2)" }}>
-      <div className="card p-4" style={{ borderRadius: "20px", boxShadow: "0 8px 25px rgba(0, 0, 0, 0.15)", width: "100%", maxWidth: "450px" }}>
+    <div
+      className="d-flex justify-content-center align-items-center vh-100"
+      style={{ background: "linear-gradient(135deg, #f75990, #6610f2)" }}
+    >
+      <div
+        className="card p-4"
+        style={{
+          borderRadius: "20px",
+          boxShadow: "0 8px 25px rgba(0,0,0,0.15)",
+          width: "100%",
+          maxWidth: "450px",
+        }}
+      >
         <h3 className="text-center mb-4 fw-bold text-primary">
           <i className="fa-solid fa-basket-shopping me-2"></i>High-Tech Grocery Store
         </h3>
@@ -121,6 +155,7 @@ const Auth: React.FC = () => {
         {!showLogin && (
           <form onSubmit={handleRegister}>
             <h5 className="text-center mb-3">Create an Account</h5>
+
             <div className="mb-3">
               <label className="form-label">Full Name</label>
               <input
@@ -132,6 +167,7 @@ const Auth: React.FC = () => {
                 onChange={(e) => setRegData({ ...regData, name: e.target.value })}
               />
             </div>
+
             <div className="mb-3">
               <label className="form-label">Phone Number</label>
               <input
@@ -145,6 +181,7 @@ const Auth: React.FC = () => {
                 onChange={(e) => setRegData({ ...regData, phone: e.target.value })}
               />
             </div>
+
             <div className="mb-3">
               <label className="form-label">Email Address</label>
               <input
@@ -156,6 +193,7 @@ const Auth: React.FC = () => {
                 onChange={(e) => setRegData({ ...regData, email: e.target.value })}
               />
             </div>
+
             <div className="mb-3">
               <label className="form-label">Password</label>
               <input
@@ -167,20 +205,42 @@ const Auth: React.FC = () => {
                 onChange={(e) => setRegData({ ...regData, password: e.target.value })}
               />
             </div>
+
             <div className="mb-3">
               <label className="form-label">Customer ID</label>
-              <div className="customer-id-box mb-2" style={{ backgroundColor: "#f8f9fa", borderRadius: "10px", padding: "8px 12px", fontWeight: 600, color: "#0d6efd", textAlign: "center" }}>
+              <div
+                className="customer-id-box mb-2"
+                style={{
+                  backgroundColor: "#f8f9fa",
+                  borderRadius: "10px",
+                  padding: "8px 12px",
+                  fontWeight: 600,
+                  color: "#0d6efd",
+                  textAlign: "center",
+                }}
+              >
                 {customerID}
               </div>
               <button type="button" className="btn btn-outline-primary btn-sm" onClick={generateCustomerID}>
                 Generate ID
               </button>
             </div>
+
             <div className="d-grid mt-3">
-              <button type="submit" className="btn btn-primary">Register Account</button>
+              <button type="submit" className="btn btn-primary">
+                Register Account
+              </button>
             </div>
+
             <p className="text-center mt-3 text-muted">
-              Already registered? <span className="toggle-link" style={{ cursor: "pointer", color: "#0d6efd" }} onClick={() => setShowLogin(true)}>Login here</span>
+              Already registered?{" "}
+              <span
+                className="toggle-link"
+                style={{ cursor: "pointer", color: "#0d6efd" }}
+                onClick={() => setShowLogin(true)}
+              >
+                Login here
+              </span>
             </p>
           </form>
         )}
@@ -189,6 +249,7 @@ const Auth: React.FC = () => {
         {showLogin && (
           <form onSubmit={handleLogin}>
             <h5 className="text-center mb-3">Login to Your Account</h5>
+
             <div className="mb-3">
               <label className="form-label">Email or Phone</label>
               <input
@@ -230,17 +291,30 @@ const Auth: React.FC = () => {
             )}
 
             <div className="text-end mb-3">
-              <small className="toggle-link" style={{ cursor: "pointer", color: "#0d6efd" }} onClick={() => setUseOtp(!useOtp)}>
+              <small
+                className="toggle-link"
+                style={{ cursor: "pointer", color: "#0d6efd" }}
+                onClick={() => setUseOtp(!useOtp)}
+              >
                 {useOtp ? "Use Password instead" : "Use OTP instead"}
               </small>
             </div>
 
             <div className="d-grid mt-3">
-              <button type="submit" className="btn btn-primary">Login</button>
+              <button type="submit" className="btn btn-primary">
+                Login
+              </button>
             </div>
 
             <p className="text-center mt-3 text-muted">
-              New user? <span className="toggle-link" style={{ cursor: "pointer", color: "#0d6efd" }} onClick={() => setShowLogin(false)}>Create account</span>
+              New user?{" "}
+              <span
+                className="toggle-link"
+                style={{ cursor: "pointer", color: "#0d6efd" }}
+                onClick={() => setShowLogin(false)}
+              >
+                Create account
+              </span>
             </p>
           </form>
         )}

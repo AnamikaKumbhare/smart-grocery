@@ -1,7 +1,7 @@
+"use client";
 import React, { useEffect, useState } from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { getUserAccount } from "../services/api";
 
 interface UserAccount {
   name: string;
@@ -10,39 +10,30 @@ interface UserAccount {
   phone: string;
 }
 
-const AccountsPage = () => {
+const AccountsPage: React.FC = () => {
   const [user, setUser] = useState<UserAccount | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
+    const storedUser = localStorage.getItem("loggedInUser");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    } else {
       alert("Please login first");
-      window.location.href = "/login";
-      return;
+      window.location.href = "/auth"; // redirect to login/auth page
     }
-
-    const fetchAccount = async () => {
-      const data = await getUserAccount(token);
-      setUser(data);
-      setLoading(false);
-    };
-
-    fetchAccount();
   }, []);
 
-  if (loading) return <p className="text-center mt-5">Loading...</p>;
-
-  if (!user) return <p className="text-center mt-5">Failed to load account info.</p>;
+  if (!user) return <p className="text-center mt-5">Loading...</p>;
 
   return (
     <>
       <Header />
 
-      <div className="container py-5">
+      <main className="container py-5">
         <h2 className="mb-4 fw-bold text-center">My Account</h2>
         <div className="row g-4">
 
+          {/* Personal Info Card */}
           <div className="col-lg-4 col-md-6">
             <div
               className="card p-3 h-100 shadow account-nav-card"
@@ -62,6 +53,7 @@ const AccountsPage = () => {
             </div>
           </div>
 
+          {/* Password & Security Card */}
           <div className="col-lg-4 col-md-6">
             <div
               className="card p-3 h-100 shadow account-nav-card"
@@ -78,6 +70,7 @@ const AccountsPage = () => {
             </div>
           </div>
 
+          {/* Customer Help Card */}
           <div className="col-lg-4 col-md-6">
             <div
               className="card p-3 h-100 shadow account-nav-card"
@@ -95,7 +88,7 @@ const AccountsPage = () => {
           </div>
 
         </div>
-      </div>
+      </main>
 
       <Footer />
     </>
