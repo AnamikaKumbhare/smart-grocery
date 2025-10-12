@@ -11,10 +11,16 @@ interface UserData {
   customerID: string;
 }
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  searchQuery?: string;
+  setSearchQuery?: (query: string) => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ searchQuery = "", setSearchQuery }) => {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<UserData | null>(null);
+  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("loggedInUser");
@@ -23,10 +29,34 @@ const Header: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    setLocalSearchQuery(searchQuery);
+  }, [searchQuery]);
+
   const handleSignOut = () => {
     localStorage.removeItem("loggedInUser");
     alert("Logged out successfully!");
     router.replace("/auth");
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLocalSearchQuery(value);
+    if (setSearchQuery) {
+      setSearchQuery(value);
+    }
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Search is handled in real-time through onChange
+  };
+
+  const handleClearSearch = () => {
+    setLocalSearchQuery("");
+    if (setSearchQuery) {
+      setSearchQuery("");
+    }
   };
 
   const isDashboard = pathname === "/dashboard";
@@ -34,7 +64,7 @@ const Header: React.FC = () => {
   return (
     <header className="top-header">
       {/* ------------------- DIV 1: Logo + User Info ------------------- */}
-      <div className="auth-logo-bar d-flex justify-content-between align-items-center px-3 py-2">
+      <div className="auth-logo-bar d-flex justify-content-between align-items-center px-3 py-0">
         {/* Logo */}
         <div className="logo-container">
           <img
@@ -70,16 +100,28 @@ const Header: React.FC = () => {
         {isDashboard ? (
           <div className="row align-items-center">
             <div className="col-lg-7 col-md-12 mb-2 mb-lg-0">
-              <div className="search-bar d-flex">
+              <form onSubmit={handleSearchSubmit} className="search-bar d-flex position-relative">
                 <input
                   type="text"
                   className="form-control"
                   placeholder="Search for groceries..."
+                  value={localSearchQuery}
+                  onChange={handleSearchChange}
                 />
-                <button className="btn btn-search">
+                {localSearchQuery && (
+                  <button
+                    type="button"
+                    className="btn-clear-search"
+                    onClick={handleClearSearch}
+                    aria-label="Clear search"
+                  >
+                    <i className="bi bi-x-circle"></i>
+                  </button>
+                )}
+                <button className="btn btn-search" type="submit">
                   <i className="bi bi-search"></i> Search
                 </button>
-              </div>
+              </form>
             </div>
 
             <div className="col-lg-5 col-md-12">
@@ -147,17 +189,65 @@ const Header: React.FC = () => {
         .user-id-display {
           color: #fff;
         }
+        .search-bar {
+          position: relative;
+        }
         .search-bar input {
           border-radius: 0.25rem 0 0 0.25rem;
+          padding-right: 40px;
         }
         .btn-search {
           background-color: #ffc107;
           color: #111;
           border: none;
+          border-radius: 0 0.25rem 0.25rem 0;
         }
         .btn-search:hover {
           background-color: #e0a800;
           color: #111;
+        }
+        .btn-clear-search {
+          position: absolute;
+          right: 85px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          color: #6c757d;
+          cursor: pointer;
+          z-index: 10;
+          padding: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 30px;
+          height: 30px;
+        }
+        .btn-clear-search:hover {
+          color: #dc3545;
+        }
+        .btn-clear-search i {
+          font-size: 1.2rem;
+        }
+        .nav-link-custom {
+          color: #fff;
+          text-decoration: none;
+          transition: color 0.2s;
+        }
+        .nav-link-custom:hover {
+          color: #ffc107;
+        }
+        .promo-banner {
+          background-color: #ffc107;
+          padding: 0.5rem;
+        }
+        .promo-banner a {
+          color: #111;
+          text-decoration: none;
+          font-weight: 600;
+        }
+        .promo-banner a:hover {
+          text-decoration: underline;
         }
       `}</style>
     </header>
