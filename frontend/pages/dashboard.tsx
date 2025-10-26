@@ -25,7 +25,6 @@ const Dashboard: React.FC = () => {
   const [user, setUser] = useState<UserData | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // Redirect to auth if not logged in
   useEffect(() => {
     const storedUser = localStorage.getItem("loggedInUser");
     if (!storedUser) {
@@ -35,7 +34,25 @@ const Dashboard: React.FC = () => {
     }
   }, [router]);
 
-  // All products in one array for easier searching
+  const [cart, setCart] = useState<Product[]>([]);
+  useEffect(() => {
+    const storedCart = JSON.parse(localStorage.getItem("cartItems") || "[]");
+    setCart(storedCart);
+  }, []);
+
+  const addToCart = (product: Product) => {
+    const updatedCart = [...cart];
+    const existing = updatedCart.find((item) => item.name === product.name);
+    if (existing) {
+      alert(`✅ ${product.name} is already in your cart.`);
+    } else {
+      updatedCart.push(product);
+      localStorage.setItem("cartItems", JSON.stringify(updatedCart));
+      setCart(updatedCart);
+      alert(`🛒 ${product.name} added to cart.`);
+    }
+  };
+
   const allProducts = {
     freshPicks: [
       { name: "Organic Red Apples", price: "$2.99/lb", badge: "25% Off", img: "https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=300&h=300&fit=crop" },
@@ -75,11 +92,9 @@ const Dashboard: React.FC = () => {
     ],
   };
 
-  // Filter products based on search query
   const filterProducts = (products: Product[]) => {
     if (!searchQuery.trim()) return products;
-    
-    return products.filter(product =>
+    return products.filter((product) =>
       product.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   };
@@ -93,8 +108,7 @@ const Dashboard: React.FC = () => {
     dailyEssentials: filterProducts(allProducts.dailyEssentials),
   };
 
-  // Check if there are any search results
-  const hasResults = Object.values(filteredProducts).some(arr => arr.length > 0);
+  const hasResults = Object.values(filteredProducts).some((arr) => arr.length > 0);
 
   if (!user) return null;
 
@@ -102,38 +116,6 @@ const Dashboard: React.FC = () => {
     <>
       <Header searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       <main className="container-fluid py-4">
-        {/* Search Results Info */}
-        {searchQuery && (
-          <div className="row mb-3">
-            <div className="col-12">
-              <div className="alert alert-info">
-                {hasResults ? (
-                  <>
-                    Showing results for: <strong>{searchQuery}</strong>
-                    <button
-                      className="btn btn-sm btn-link float-end"
-                      onClick={() => setSearchQuery("")}
-                    >
-                      Clear Search
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    No results found for: <strong>{searchQuery}</strong>
-                    <button
-                      className="btn btn-sm btn-link float-end"
-                      onClick={() => setSearchQuery("")}
-                    >
-                      Clear Search
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Banner Ads - only show when not searching */}
         {!searchQuery && (
           <div className="row g-3 mb-4">
             <div className="col-lg-6">
@@ -141,7 +123,12 @@ const Dashboard: React.FC = () => {
                 src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&h=150&fit=crop"
                 className="ad-banner"
                 alt="Veg Deals"
-                style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "8px" }}
+                style={{
+                  width: "100%",
+                  height: "120px",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                }}
               />
             </div>
             <div className="col-lg-6">
@@ -149,43 +136,25 @@ const Dashboard: React.FC = () => {
                 src="https://images.unsplash.com/photo-1550583724-b2692b85b150?w=600&h=150&fit=crop"
                 className="ad-banner"
                 alt="Dairy Promo"
-                style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "8px" }}
+                style={{
+                  width: "100%",
+                  height: "120px",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                }}
               />
             </div>
           </div>
         )}
 
-        {/* Product Sections */}
         <div className="row g-4">
-          {filteredProducts.freshPicks.length > 0 && (
-            <Section title="Fresh Picks for You" products={filteredProducts.freshPicks} />
-          )}
-          {filteredProducts.pantryEssentials.length > 0 && (
-            <Section title="Your Pantry Essentials" products={filteredProducts.pantryEssentials} />
-          )}
-          {filteredProducts.snackBeverage.length > 0 && (
-            <Section title="Snack & Beverage Bargains" products={filteredProducts.snackBeverage} />
-          )}
-          {filteredProducts.popularItems.length > 0 && (
-            <Section title="Popular Items" products={filteredProducts.popularItems} />
-          )}
-          {filteredProducts.weeklySaver.length > 0 && (
-            <Section title="Weekly Super Saver" products={filteredProducts.weeklySaver} />
-          )}
-          {filteredProducts.dailyEssentials.length > 0 && (
-            <Section title="Daily Essentials" products={filteredProducts.dailyEssentials} />
-          )}
+          <Section title="Fresh Picks for You" slug="freshPicks" products={filteredProducts.freshPicks} addToCart={addToCart} />
+          <Section title="Your Pantry Essentials" slug="pantryEssentials" products={filteredProducts.pantryEssentials} addToCart={addToCart} />
+          <Section title="Snack & Beverage Bargains" slug="snackBeverage" products={filteredProducts.snackBeverage} addToCart={addToCart} />
+          <Section title="Popular Items" slug="popularItems" products={filteredProducts.popularItems} addToCart={addToCart} />
+          <Section title="Weekly Super Saver" slug="weeklySaver" products={filteredProducts.weeklySaver} addToCart={addToCart} />
+          <Section title="Daily Essentials" slug="dailyEssentials" products={filteredProducts.dailyEssentials} addToCart={addToCart} />
         </div>
-
-        {/* No Results Message */}
-        {searchQuery && !hasResults && (
-          <div className="row mt-5">
-            <div className="col-12 text-center">
-              <h3>No products found</h3>
-              <p className="text-muted">Try searching for something else</p>
-            </div>
-          </div>
-        )}
       </main>
       <Footer />
     </>
